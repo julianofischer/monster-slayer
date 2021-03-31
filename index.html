@@ -40,14 +40,16 @@
 
         <div v-else class="container p-3 border mt-3 text-center">
             <button @click="attack" class="btn btn-danger">Attack</button>
-            <button class="btn btn-warning">Special Attack</button>
-            <button class="btn btn-success">Heal</button>
-            <button class="btn btn-light">Give up</button>
+            <button @click="special_attack" class="btn btn-warning">Special Attack</button>
+            <button @click="heal" class="btn btn-success">Heal</button>
+            <button @click="giveup" class="btn btn-light">Give up</button>
         </div>
 
         <div class="container p-3 border mt-3 text-center">
             <h4>Action Log</h4>
-            {{ ataque }}
+            <ul class="list-unstyled text-light">
+                <li v-for="l in attack_log" class="mt-1" v-bind:class="{'bg-danger': l.monster_class, 'bg-success': l.you_class}">{{l.msg}}</li>
+            </ul>
         </div>
 
     </div>
@@ -62,6 +64,7 @@
                 ataque: 0,
                 monster_life: 100,
                 your_life:100,
+                attack_log: [],
             },
             methods: {
                 getRandomNumber : function (){
@@ -82,9 +85,14 @@
                     msg = `You ${status}. Do you want to play again?`;
                     console.log(msg);
                     ret = confirm(msg);
+                    this.reset();
+                    if(ret){
+                        this.not_inited=false;
+                    }
                 },
                 attack : function(){
                     number = this.getRandomNumber();
+                    this.add_to_log(true, number, "attacked")
                     if(this.checkEnd(true, number)){
                         this.monster_life = 0;
                         this.endGame('win');
@@ -95,6 +103,7 @@
                 },
                 special_attack : function(){
                     number = this.getRandomNumber() + this.getRandomNumber();
+                    this.add_to_log(true, number, "used a special attacked")
                     if(this.checkEnd(true, number)){
                         this.monster_life = 0;
                         this.endGame('win');
@@ -106,19 +115,41 @@
                 heal : function(){
                     number = this.getRandomNumber();
                     this.your_life += number;
+                    this.attack_log.push({msg: `You cured yourself ${number} life points`, monster_class: false, you_class: true});
+                    this.counter_attack();
+                },
+                reset : function(){
+                    this.monster_life = 100;
+                    this.your_life = 100;
+                    this.attack_log = [];
+                    this.not_inited = true;
                 },
                 giveup : function(){
-                    number = this.getRandomNumber();
-                    this.ataque = number;
+                    this.reset();
                 },
                 counter_attack : function(){
                     number = this.getRandomNumber();
+                    this.add_to_log(false, number, "attacked")
                     if(this.checkEnd(false, number)){
                         this.your_life = 0;
                         this.endGame('lost');
                     }else{
                         this.your_life -= number;
                     }
+                },
+                add_to_log : function(you, damage, action){
+                    attacker = 'Monster'
+                    attacked = 'You'
+                    monster_class = true
+                    you_class = false
+                    if(you){
+                        attacker = "You"
+                        attacked = "Monster"
+                        monster_class = false
+                        you_class = true
+                    }
+                    msg = `${attacker} ${action} ${attacked} and caused ${damage} of damage.`
+                    this.attack_log.push({msg: msg, monster_class: monster_class, you_class: you_class})
                 }
             }
         })
